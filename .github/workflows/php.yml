@@ -1,0 +1,39 @@
+name: Run Unit Testing
+
+on:
+    push:
+        branches: [ main ]
+    pull_request:
+        branches: [ main ]
+
+jobs:
+    build:
+
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: '8.0'
+
+            -   uses: actions/checkout@v2
+
+            -   name: Validate composer.json and composer.lock
+                run: composer validate
+
+            -   name: Cache Composer Packages
+                id: composer-cache
+                uses: actions/cache@v2
+                with:
+                    path: vendor
+                    key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+                    restore-keys: |
+                        ${{ runner.os }}-php-
+
+            -   name: Install Dependencies
+                if: steps.composer-cache.outputs.cache-hit != 'true'
+                run: composer install --prefer-dist --no-progress --no-suggest
+
+            -   name: Run PHP Unit Test
+                run: vendor/bin/phpunit
